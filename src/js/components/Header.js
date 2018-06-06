@@ -5,7 +5,7 @@ export default class Header extends Component {
 		super(props);
 	}
 	componentDidUpdate(){        
-        $('.toggleInput').bootstrapToggle();
+        $('.dropdown-toggle').bootstrapToggle();
     }	
 	render() {
 		return (            

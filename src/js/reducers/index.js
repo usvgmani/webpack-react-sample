@@ -13,8 +13,10 @@ but its cleaner to create multiple small reducers and combine them together like
 
 import {combineReducers} from 'redux';
 import { routeReducer } from 'react-router-redux';
+import getAppData from './anAppData';
 
 const rootReducer = combineReducers({ 
   routing: routeReducer,
+  getAppData
 });
 export default rootReducer;

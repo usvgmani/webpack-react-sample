@@ -18,10 +18,7 @@ class App extends Component {
         return ( <div className="p2p-container">
         <Header />        
         <div className="container">
-            {this.props.children}
-            <div className="loader">
-                <i className="glyphicon glyphicon-refresh spin"></i>
-            </div>            
+            {this.props.children}          
         </div>
         </div>)
     }
