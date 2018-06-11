@@ -1,0 +1,133 @@
+#!groovy
+pipeline {
+    environment{     
+      DEPLOY_URL_STAGE = "https://app:443/api/zipdeploy"
+      DEPLOY_CREDENTIALS_ID_STAGE = 'DEPLOY_PROFILE_STAGE_API'
+      DEPLOY_CREDENTIALS_STAGE = credentials("${DEPLOY_CREDENTIALS_ID_STAGE}"
+    )}
+    agent {
+        node{
+            label 'master'
+        }
+    }
+    stages {
+        stage('Clean workspace'){
+      		steps{
+      		  //Clean workspace before build starts and clearing gradle cache
+      		  echo 'Cleaning Workspace....'
+      		  deleteDir()
+      		}
+        }
+        stage('Checkout'){
+            steps{
+                echo 'Build Started'
+                script{
+                    def color = '#FFFF00'
+                    slackSend(color: color, message: "Started: Build Started for
+                    '${env.JOB_NAME} [${env.BUILD_NUMBER}]' ${env.BUILD_URL}. ", channel: "#slack")
+                }
+                echo 'SCM checkout'                
+                checkout scm
+            }
+        }
+        stage('Set Short Git Commit Hash'){
+            steps{  
+            sh 'git rev-parse HEAD > commit'   
+            script{
+                git_commit = readFile('commit').trim()
+                SHORT_GIT_COMMIT = git_commit.take(10)
+            }  
+            echo "Short Git Commit = ${SHORT_GIT_COMMIT}"}
+        }
+        stage('Build'){
+          when {
+              expression {params.NEXUS_VERSION == ''}
+          }
+          steps{
+             
+          }
+        }
+        stage ('Zip files'){
+            when {
+              expression {params.NEXUS_VERSION == ''}
+            }
+            steps {
+                echo "Zipping build artifacts"
+		            sh "zip -rj dist.zip *"
+            }
+        } 
+        stage('Push Artifact to Nexus'){
+            when {
+              expression {params.NEXUS_VERSION == ''}
+            }
+            steps {
+              nexusArtifactUploader artifacts: [[artifactId: 'app', classifier: '', file: "dist.zip", type: 'zip']], 
+              credentialsId: '', groupId: '', nexusUrl: '', nexusVersion: 'nexus3', protocol: 'https', 
+              repository: 'raw-hosted', version: "${SHORT_GIT_COMMIT}"  
+            }
+        }
+        stage('Download Artifact from Nexus'){
+            when {
+              expression {params.NEXUS_VERSION != ''}
+            }
+            steps{
+         
+            }
+        }
+	     stage ('Deploy to Test'){
+            when {
+              expression {params.NEXUS_VERSION == '' && params.DEPLOY_ENV == 'Test'}
+            }
+             steps{
+                echo "Azure Deploy through Curl"
+                /*
+                withCredentials([usernamePassword(credentialsId: "${DEPLOY_CREDENTIALS_ID_TEST}", 
+                passwordVariable: 'publishprofilepassword', usernameVariable: 'publishprofileUser')]) {
+                  sh "curl --insecure -v -u '${publishprofileUser}:${publishprofilepassword}'
+                  --upload-file dist.zip -X POST ${DEPLOY_URL_TEST}"
+                }
+                */
+                echo "Latest git build of branch ${GIT_BRANCH} deployed to test!"              
+             }         
+        }
+        
+        stage ('Deploy nexus version to Stage'){
+            when {
+              expression {params.NEXUS_VERSION != '' && params.DEPLOY_ENV == 'Stage'}
+            }
+             steps{
+                echo "Azure Deploy through Curl"
+            
+                echo "Nexus version ${NEXUS_VERSION} deployed to stage!"              
+             }         
+        }
+        stage ('Deploy nexus version to Prod'){
+            when {
+              expression {params.NEXUS_VERSION != '' && params.DEPLOY_ENV == 'Prod'}
+            }
+             steps{
+                echo "Azure Deploy through Curl"
+              
+                echo "Nexus version ${NEXUS_VERSION} deployed to Prod!"              
+             }         
+        }
+    }
+    post {
+      success {
+        echo 'Success'
+        script{
+          def color = '#00FF00'
+          slackSend(color: color, message: "SUCCESFUL:
+          Build Complete for '${env.JOB_NAME} [${env.BUILD_NUMBER}]' ${env.BUILD_URL}. ", channel: "#slack")
+        }
+      }
+      failure {
+        echo 'Failure'
+        script{
+          def color = '#FF0000'
+          slackSend(color: color, message: "FAILED: Build FAILED for '${env.JOB_NAME} [${env.BUILD_NUMBER}]' ${env.BUILD_URL}. ", 
+          channel: "#slack")
+        }  
+      }
+    }    
+}
