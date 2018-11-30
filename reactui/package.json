@@ -1,5 +1,5 @@
 {
-  "name": "react-redux-reference-app-org-directory",
+  "name": "react-redux-sample",
   "version": "0.0.1",
   "description": "A reference app using React for the view layer, Redux for state management, Webpack for module loading and task automation, and Babel for ES2015 transpiling.",
   "main": "index.js",
@@ -10,7 +10,7 @@
     "test": "jest",
     "build:prod": "webpack"
   },
-  "author": "Thom Patterson",
+  "author": "Siva",
   "license": "ISC",
   "jest": {"testResultsProcessor": "./node_modules/jest-html-reporter" },
   "dependencies": {
