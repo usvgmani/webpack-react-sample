@@ -15,7 +15,7 @@ export default function getAppData(state = initialState, action) {
             };
         case ActionTypes.RECEIVE_DATA:
             return{...state,
-                isDataLoading: true,
+                isDataLoading: false,
                 anAppData: action
                 };      
         case ActionTypes.CLEAR_DATA:
